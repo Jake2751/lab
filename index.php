@@ -106,21 +106,13 @@ abstract class field
     protected $caption;
     protected $value;
     protected $is_required;
-    protected $parameters;
-    protected $help;
-    protected $help_url;
-    public $css_class;
-    public $css_style;
 
     function _construct(
         $name,
         $type,
         $caption,
         $is_required = false,
-        $value = "",
-        $parameters = "",
-        $help = "",
-        $help_url = "")
+        $value = "")
 
         {
             $this->name = $this->encodestring($name);
@@ -128,9 +120,6 @@ abstract class field
             $this->caption = $caption;
             $this->is_required = $is_required;
             $this->value = $value;
-            $this->parameters = $parameters;
-            $this->help = $help;
-            $this->help_url = $help_url;
         }
 
         abstract function check();
@@ -167,18 +156,13 @@ abstract class field
 class field_text extends field 
 {
     public $size; 
-    public $maxlength;
 
     function _construct(
         $name,
         $caption,
         $is_required = false,
         $value = "",
-        $maxlength = 225, 
-        $size = 41,
-        $parameters = "",
-        $help = "",
-        $help_url = "")
+        $size = 41)
 
         {
         parent::_construct(
@@ -186,61 +170,30 @@ class field_text extends field
             "text",
             $caption,
             $is_required,
-            $value,
-            $parameters,
-            $help,
-            $help_url);
+            $value);
 
             $this->$size = $size;
-            $this->$maxlength = $maxlength;
         }
 
         function get_html()
         {
-         if(!empty($this->css_style))  
-         {
-             $style = "style=\"".$this->css_style."\"";
-         } 
-         else $style = "";
-         if(!empty($this->css_class))  
-         {
-             $class = "class=\"".$this->css_class."\"";
-         } 
-         else $class = "";
          if(!empty($this->size))  {
              $size = "size=".$this->size;
          }
          else $size = "";
-         if(!empty($this->maxlength))  
-         {
-             $maxlength = "maxlength=".$this->maxlength;
-         }
-         else $maxlength = "";
 
          $tag = "<input $style $class
                     type=\"".$this->type."\"
                     name=\"".$this->name."\"
                     value=\"".
                     htmlspecialchars($this->value, ENT_QUOTES)."\"
-                    $size $maxlength>\n";
+                    $size >\n";
 
          if($this->is_required) {
              $this->caption .= " *";
          }
         
-         $help = "";
-         if(!empty($this->help))
-         {
-             $help .= "<span style='color:blue'>".
-                        n12br($this->help)."</span>";
-         }
-         if(!empty($help)) $help .= "<br>";
-         if(!empty($this->help_url)) {
-             $help .= "<span style='color:blue'><a href=".
-             $this->help_url."помощь</a></span>";
-         }
-         
-         return array($this->caption, $tag, $help);
+         return array($this->caption, $tag);
         }
 
         function check()
@@ -302,16 +255,11 @@ public function print_form(){
     if(!empty($this->fields)){
         foreach($this->fields as $obj)
         {
-            list($caption, $tag, $help, $alternative) = $obj->get_html();
+            list($caption, $tag, $alternative) = $obj->get_html();
             if(is_array($tag)) $tag = implode("<br>",$tag);
             echo "<tr>
                     <td width=100 </td> 
                 </tr>\n";
-                if(!empty($help)){
-                    echo "<tr>
-                            <td>&nbsp;</td>
-                        </tr>";
-                }
         }
     }
 
@@ -338,6 +286,31 @@ public function check(){
     }
     return $arr;
 }
+
+public function sendToData()    //Заполнение базы данных 
+{
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "SignupLabDB";
+
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    
+    } 
+        $sql = "INSERT INTO `users` (`fields`)
+        VALUES ($this->fields')";
+
+
+    if ($conn->query($sql) === TRUE) {
+    } else {
+        echo "Error: " . $sql . "<br>" . $conn->error;
+    }
+$conn->close();
+}
+
 }
 
 class field_password extends field_text
@@ -346,22 +319,14 @@ class field_password extends field_text
         $name,
         $is_required,
         $value = "",
-        $maxlength = 255,
-        $size = 41,
-        $parameters = "",
-        $help = "",
-        $help_url = "")
+        $size = 41)
         
         {
             parent::_construct(
                 $name,
                 $is_required,
                 $value,
-                $maxlength,
-                $size,
-                $parameters,
-                $help,
-                $help_url);
+                $size);
 
                 $this->type = "password";
         }
@@ -386,10 +351,7 @@ class field_checkbox extends field
     function _construct(
         $name,
         $caption,
-        $value = false,
-        $parameters = "",
-        $help = "",
-        $help_url = "")
+        $value = false)
 
         {
             parent::_construct(
@@ -397,10 +359,7 @@ class field_checkbox extends field
                 "checkbox",
                 $caption,
                 false,
-                $value,
-                $parameters,
-                $help,
-                $help_url   
+                $value 
             );
 
             if($value == "on") $this->value = true;
@@ -414,19 +373,7 @@ class field_checkbox extends field
                 type=\"".$this->type."\"
                 name=\"".$this->name."\"
                 $checked>\n";
-        $help = "";
-        if(!empty($this->help)){
-            $help .= "<span style='color:blue'>".
-                    n12br($this->help)
-                    ."</span>";
-        }
-        if(!empty($help)) $help .= "<br>";
-        if(!empty($this->help_url)){
-            $help .= "<span style='color:blue'>
-                        <a href=".$this->help_url.">помощь</a>
-                        </span>";
-        }
-        return array($this->caption, $tag, $help);
+        return array($this->caption, $tag);
     }
 
     function check(){
@@ -446,8 +393,7 @@ class field_select extends field
         $options = array(),
         $value,
         $multi = false,
-        $select_size = 4,
-        $parameters = ""
+        $select_size = 4
     )
 
     {
@@ -456,8 +402,7 @@ class field_select extends field
             "select",
             $caption,
             false,
-            $value,
-            $parameters
+            $value
         );
 
         $this->options = $options;
@@ -487,19 +432,7 @@ class field_select extends field
                 }
             }
             $tag .= "</selected>\n";
-            $help = "";
-            if(!empty($this->help)){
-                $help .= "<span style='color:blue'>".
-                        n12br($this->help)
-                        ."</span>";
-            }
-            if(!empty($help)) $help .= "<br>";
-            if(!empty($this->help_url)){
-                $help .= "<span style='color:blue'>
-                            <a href=".$this->help_url.">помощь</a>
-                            </span>";
-            }
-            return array($this->caption, $tag, $help);
+            return array($this->caption, $tag);
         }
         function check()
         {
